@@ -6,6 +6,7 @@ from datetime import datetime
 import io
 import cv2
 import os
+import torch
 
 
 LOG_DIR = "s3_sim_bucket/defects_log"
@@ -21,10 +22,13 @@ app = FastAPI(
 
 MODEL_PATH = "endustriyel_model.pt"
 try:
+    # PyTorch'un güvenlik kısıtlamasını modelimizi yüklemek için esnetiyoruz
+    torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential, torch.nn.modules.container.ModuleList])
+    
     model = YOLO(MODEL_PATH)
-    print("Model ve MLOps modülü başarıyla yüklendi!")
+    print(" Model başarıyla belleğe yüklendi!")
 except Exception as e:
-    print(f"❌ Model yüklenirken hata: {e}")
+    print(f"❌ Model yüklenirken hata oluştu: {e}")
 
 @app.get("/")
 def root():
