@@ -1,0 +1,6 @@
+venv/ 
+raw_dataset/ 
+yolov8_dataset/ 
+runs/ 
+__pycache__/ 
+s3_sim_bucket/ 

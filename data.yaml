@@ -1,0 +1,15 @@
+path: ./yolov8_dataset  # Proje kök dizinine göre veri seti yolu
+train: train/images     # Eğitim görselleri yolu
+val: validation/images  # Doğrulama görselleri yolu
+
+# Sınıf Sayısı
+nc: 6
+
+# Sınıf İsimleri (data_prep.py ile tam olarak aynı sırada olmalı)
+names:
+  0: crazing
+  1: inclusion
+  2: patches
+  3: pitted_surface
+  4: rolled-in_scale
+  5: scratches
