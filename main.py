@@ -1,3 +1,13 @@
+import torch
+
+
+original_load = torch.load
+def patched_load(*args, **kwargs):
+    kwargs['weights_only'] = False
+    return original_load(*args, **kwargs)
+torch.load = patched_load
+# ---------------------------------------------------------
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from ultralytics import YOLO
@@ -6,7 +16,6 @@ from datetime import datetime
 import io
 import cv2
 import os
-import torch
 
 
 LOG_DIR = "s3_sim_bucket/defects_log"
@@ -15,20 +24,17 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 app = FastAPI(
     title="Endüstriyel Hata Tespiti & MLOps API", 
-    description="Hataları tespit eden ve kusurlu üretimleri loglama sistemi.",
+    description="Hataları tespit eden ve kusurlu üretimleri loglayan sistem.",
     version="2.0"
 )
 
 
 MODEL_PATH = "endustriyel_model.pt"
 try:
-    # PyTorch'un güvenlik kısıtlamasını modelimizi yüklemek için esnetiyoruz
-    torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential, torch.nn.modules.container.ModuleList])
-    
     model = YOLO(MODEL_PATH)
-    print(" Model başarıyla belleğe yüklendi!")
+    print("✅ Model ve MLOps modülü bulutta başarıyla yüklendi!")
 except Exception as e:
-    print(f"❌ Model yüklenirken hata oluştu: {e}")
+    print(f"❌ Model yüklenirken kritik hata: {e}")
 
 @app.get("/")
 def root():
@@ -38,10 +44,8 @@ def root():
 @app.post("/predict")
 async def predict_defect(file: UploadFile = File(...)):
     try:
-        
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        
         
         results = model.predict(image, conf=0.25)
         
@@ -56,19 +60,12 @@ async def predict_defect(file: UploadFile = File(...)):
                     "koordinatlar": {"x1": round(x1, 2), "y1": round(y1, 2), "x2": round(x2, 2), "y2": round(y2, 2)}
                 })
         
-        
         if len(detections) > 0:
-            
             annotated_img = results[0].plot() 
-            
-            
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             saved_filename = f"defect_{timestamp}_{file.filename}"
             save_path = os.path.join(LOG_DIR, saved_filename)
-            
-            
             cv2.imwrite(save_path, annotated_img)
-            
             log_mesaji = f"Görsel {LOG_DIR} klasörüne loglandı."
         else:
             log_mesaji = "Ürün kusursuz, loglama yapılmadı."
